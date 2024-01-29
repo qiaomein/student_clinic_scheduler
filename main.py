@@ -48,7 +48,10 @@ class Slots(object):
         self.slot_max = [self.ms1mc, self.ms2mc, self.ms34mc, self.spanish12mc, self.spanish34mc, self.ms1ac, self.ms2ac, self.ms34ac, self.spanish12ac, self.spanish34ac]
 
         for i in range(self.n):
-            names = '\n'.join([str(x) for x in self.all_slots[i]])
+            k = list(set([str(x) for x in self.all_slots[i]]))
+            names = '\n'.join(k)
+            if len(self.all_slots[i]) == 0:
+                names = "- None available"
             print(f"{self.slot_names[i]}: \n{names}")
             print("\n##################################################################\n")
         
@@ -199,8 +202,8 @@ if __name__ == "__main__":
                 
     final = slots.cleanup()
     
-    
-    print(f"Students left out:\n{[s.email for s in students_left]}")
+    leftout = '\n'.join([str(s) for s in students_left])
+    print(f"Students left out:\n{leftout}")
     
     print("\n\n")
     
