@@ -53,7 +53,7 @@ class Slots(object):
 
 
 
-        for i in range(self.n):
+        for i in range(self.n): # loop through all the time slots
             k = list(set([str(x) for x in self.all_slots[i]])) #rids duplicates
             kl = len(k)
             names = '\n'.join(k)
@@ -87,7 +87,7 @@ def isEligible(student, slots, i): # true if student can be slotted into slots.a
 
 
 def check_all(out, slots, all_students, students_left): # checks that output satisfies all constraints
-    # out is a list of students such that out[i] is the list of all students with attendance i
+    # out is final scheduling of students such that out[i] is the students in the ith time slot
     # slots is the final Slots object 
     # students_left is a list of all students not selected
     # all_students is a list of all students
@@ -95,7 +95,7 @@ def check_all(out, slots, all_students, students_left): # checks that output sat
     N = len(set(all_students)) 
     
     selected_students = []
-    for s in final:
+    for s in out:
         selected_students.extend(s)
     
     all_slots = slots.all_slots
@@ -120,6 +120,17 @@ def check_all(out, slots, all_students, students_left): # checks that output sat
             slot = all_slots[i]
             if len(slot) < slots.slot_max[i]: # if the slot isn't full, check if student left can be fit in
                 assert not isEligible(s, slots, i)
+                
+    # assert that every student is in correct time slot
+    for i in range(slots.n): # checking morning slots
+        for student in out[i]:
+            if i < 5:
+                assert student.time_slot in ['m','b']
+            else:
+                assert student.time_slot in ['a','b']
+        
+        
+        
                 
             
     
@@ -152,6 +163,8 @@ if __name__ == "__main__":
             
     
     # load in any attendance files; create one if doesn't exist
+    
+    print("LOG: Tracker is formatted as \n\n email | attendance | attempts \n")
     
     if countname not in os.listdir():
         print(f"LOG: attendance data file {countname} NOT detected. Creating an empty one...")
@@ -200,32 +213,32 @@ if __name__ == "__main__":
     
         student_set = clist[c]
         random.shuffle(student_set) # randomize 
-        student_set.sort(key = lambda x: -x.attempts)
+        student_set.sort(key = lambda x: -x.attempts) # sort by attempts after shuffling
         
         student_set_spanish = list(filter(lambda x: x.spanish, student_set))
         student_set_both_spanish = list(filter(lambda x: x.time_slot == 'b', student_set_spanish))
-        student_set_morning_spanish = list(filter(lambda x: x.time_slot == 'm', student_set_spanish)) + student_set_both_spanish
+        student_set_morning_spanish = list(filter(lambda x: x.time_slot == 'm', student_set_spanish)) 
         student_set_afternoon_spanish = list(filter(lambda x: x.time_slot == 'a', student_set_spanish))
         
         
         ## now sort students with count c based on their time slot
         
-        for student in student_set_morning_spanish:
+        for student in student_set_morning_spanish + student_set_both_spanish:
     
             if student.year > 2:
                 if len(slots.spanish34m) < slots.spanish34mc:
                     slots.spanish34m.append(student)
                     student_set = removeStudent(student,student_set)
-                    student_set_morning_spanish = removeStudent(student, student_set_morning_spanish)
+                    student_set_both_spanish = removeStudent(student, student_set_both_spanish)
             else:
                 if len(slots.spanish12m) < slots.spanish12mc:
                     slots.spanish12m.append(student)
                     student_set = removeStudent(student,student_set)
-                    student_set_morning_spanish = removeStudent(student, student_set_morning_spanish)
+                    student_set_both_spanish = removeStudent(student, student_set_both_spanish)
         
         # takes people in both time slots not chosen before into next one
             
-        for s in student_set_afternoon_spanish + student_set_morning_spanish: 
+        for s in student_set_afternoon_spanish + student_set_both_spanish: 
             if s.year > 2:
                 if len(slots.spanish34a) < slots.spanish34ac:
                     slots.spanish34a.append(s)
@@ -237,27 +250,28 @@ if __name__ == "__main__":
     
         
         student_set_both = list(filter(lambda x: x.time_slot == 'b', student_set))
-        student_set_morning = list(filter(lambda x: x.time_slot == 'm', student_set)) + student_set_both
+        student_set_morning = list(filter(lambda x: x.time_slot == 'm', student_set))
+        
         student_set_afternoon = list(filter(lambda x: x.time_slot == 'a', student_set))
         
     
         
-        for student in student_set_morning:
+        for student in student_set_morning + student_set_both:
     
             if student.year > 2 and len(slots.ms34m) < slots.ms34mc:
                 slots.ms34m.append(student)
                 student_set = removeStudent(student,student_set)
-                student_set_morning = removeStudent(student,student_set_morning)
+                student_set_both = removeStudent(student,student_set_both)
             elif student.year == 2 and len(slots.ms2m) < slots.ms2mc:
                 slots.ms2m.append(student)
                 student_set = removeStudent(student,student_set)
-                student_set_morning = removeStudent(student,student_set_morning)
+                student_set_both = removeStudent(student,student_set_both)
             elif student.year == 1 and len(slots.ms1m) < slots.ms1mc:
                 slots.ms1m.append(student)
                 student_set = removeStudent(student,student_set)
-                student_set_morning = removeStudent(student,student_set_morning)
+                student_set_both = removeStudent(student,student_set_both)
         
-        for student in student_set_afternoon + student_set_morning:
+        for student in student_set_afternoon + student_set_both:
     
             if student.year > 2 and len(slots.ms34a) < slots.ms34ac:
                 slots.ms34a.append(student)
