@@ -143,8 +143,8 @@ if __name__ == "__main__":
     students_dict = dict() # initialize database of all students
     
     
-    filename = "responses 3.csv"
-    countname = "tracker.csv"
+    filename = "responses.csv"
+    tracker_filename = "tracker.csv"
     
     # load in responses
     try:
@@ -161,19 +161,20 @@ if __name__ == "__main__":
         print(f"ERROR: Please ensure {filename} is in same directory as this program.")
         raise
             
+    all_emails = students_dict.keys()
     
     # load in any attendance files; create one if doesn't exist
     
     print("LOG: Tracker is formatted as \n\n email | attendance | attempts \n")
     
-    if countname not in os.listdir():
-        print(f"LOG: attendance data file {countname} NOT detected. Creating an empty one...")
-        with open(countname,'w') as f:
+    if tracker_filename not in os.listdir():
+        print(f"LOG: attendance data file {tracker_filename} NOT detected. Creating an empty one...")
+        with open(tracker_filename,'w') as f:
             for email in students_dict.keys():
                 f.write(f"{email},0,0\n") # format is email: attendance, attempts to sign up
     else:
-        print(f"LOG: attendance data file {countname} DETECTED. Loading...")
-        with open(countname,'r') as f:
+        print(f"LOG: attendance data file {tracker_filename} DETECTED. Loading...")
+        with open(tracker_filename,'r') as f:
             c = f.readlines()
             tempd = dict()
             for item in c:
@@ -307,8 +308,22 @@ if __name__ == "__main__":
         
     if r == 'Y':
         # increment the attendance in the attendance file
-        #os.remove(countname)
-        with open(countname,'w') as f:
+        #os.remove(tracker_filename)
+        
+        with open(tracker_filename,'r') as f:
+            temp = f.readlines()
+            
+        
+        
+        with open(tracker_filename,'w') as f:
+            
+            # load previous data in tracker
+            
+            for student in temp:
+                if student.split(",")[0] not in all_emails:
+                    f.write(student)
+            
+            
             for s in students:
                 s.attempts += 1
                 if s not in students_left: # only increment if student has been selected
