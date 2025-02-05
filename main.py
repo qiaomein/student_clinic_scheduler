@@ -85,7 +85,6 @@ def isEligible(student, slots, i): # true if student can be slotted into slots.a
         return False
             
 
-
 def check_all(out, slots, all_students, students_left): # checks that output satisfies all constraints
     # out is final scheduling of students such that out[i] is the students in the ith time slot
     # slots is the final Slots object 
@@ -178,7 +177,10 @@ if __name__ == "__main__":
             c = f.readlines()
             tempd = dict()
             for item in c:
-                k,v,attempts = item.split(',')
+                try:
+                    k,v,attempts = item.split(',')
+                except ValueError:
+                    continue
                 v = v.strip()
                 attempts = attempts.strip()
                 tempd[k] = [int(v),int(attempts)]
