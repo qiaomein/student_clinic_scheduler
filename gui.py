@@ -17,7 +17,7 @@ def main():
     st.set_page_config(layout="wide")
 
     st.title("Student Clinic Scheduler")
-    st.text("Created by Ronald Shaju, Volunteer Coordinator 2024-2025")
+    st.text("Ronald Shaju, Volunteer Coordinator 2024-2025")
     st.text("Contact info: Ronald.shaju01@utrgv.edu, ronaldshaju@gmail.com, (956) 605-4202")
 
     
