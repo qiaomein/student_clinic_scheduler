@@ -1,4 +1,5 @@
-THIS DOCUMENT COVERS:
+## THIS DOCUMENT COVERS:
+
 1. how to import data from google form at: https://forms.gle/UAvQuLgE1Gz5NL7b7
 
 After responses are filled on the form, simply save the file as a CSV file and rename it to "responses.csv" in the same directory as the "main.py" file (this is the main program). You may manually change the free response answers such as name and email in case of typos.
