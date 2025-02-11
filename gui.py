@@ -71,7 +71,7 @@ def main():
         if goButton: ############# MAIN SORTING FEATURE
             
             # now schedule from responses_df
-            finalSlots, students_left = scheduleResponses(slots,responses_df,attendance_df)
+            finalSlots, students_left,updated_tracker = scheduleResponses(slots,responses_df,attendance_df)
             
             
             # print('\n-----------------------------------\n')
@@ -100,15 +100,16 @@ def main():
         
     
     # now, update the counts and attendance of selected students and download the updated tracker
-    if processed_df is not None:
-        csv_buffer = io.StringIO()
-        processed_df.to_csv(csv_buffer, index=False)
+    
+        
         st.download_button(
             label="Download Updated Attendance CSV",
-            data=csv_buffer.getvalue(),
+            data=updated_tracker.to_csv(index = False),
             file_name="updated_tracker.csv",
             mime="text/csv"
         )
+        st.subheader("Updated Tracker Preview")
+        st.dataframe(updated_tracker)
     
 if __name__ == "__main__":
     main()

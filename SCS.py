@@ -15,6 +15,8 @@ def logout(*s): print(f"[LOG]: {s}")
 class Student(object): # pass in a line (l) from the csv file as a list
     def __init__(self, l, count = 0, attempts = 0):
         # TODO: handle if l goes wrong
+        if l is None: # nameless student
+            return
         
         self.slot = None # should start with no slot; this is index corresponding to order listed in Slots class
         self.time, self.name, self.email, self.raw_time_slot, self.year, self.spanish = l
@@ -172,25 +174,35 @@ def scheduleResponses(slots, responses_df, attendance_df):
     # outputs a Slots.curr_slots populated with students and another list of students left out
     
     # first construct a pool of students from responses_df
-    all_students = [Student(row) for row in responses_df.itertuples(index = False)]
-    
+    all_students = [Student(row) for row in responses_df.itertuples(index = False)] # this only includes responders
+    prev_students = [] # keep track of previous students (from attendance file)
     ## load in data from attendance_df
     if attendance_df is not None: 
-        all_emails = [s.email for s in all_students]
-        filtereddf = attendance_df[attendance_df['email'].isin(all_emails)]
-        student_dict = filtereddf.set_index("email").to_dict(orient="index")
+        all_emails = [s.email for s in all_students] # emails of all requesting students
+        # email, attendance, attempts
+        # take all rows with the @ symbol in the first column;
+        filtereddf = attendance_df[attendance_df.iloc[:, 0].str.contains("@", na=False)]
+        student_dict = filtereddf.set_index(filtereddf.columns[0]).apply(tuple, axis=1).to_dict()
+        # print('here',student_dict) # never using pandas again lmfao
+        for email,d in student_dict.items():
+            if email not in all_emails:
+                s = Student(None)
+                s.email = email
+                s.count, s.attempts = d
+                prev_students.append(s)
         
-        for s in all_students:
-            
+        for s in all_students: # update the previous attendance of the responding students
             if s.email in student_dict.keys():
                 d = student_dict[s.email]
-                s.count = d['attendance']
-                s.attempts = d['attempts']
+                s.count = d[0]
+                s.attempts = d[1]
             else: # new email in the responses!
                 pass
+        
+        
                 
         
-    
+    complete_students = all_students + prev_students
     
     random.shuffle(all_students) # randomize 
     # want to prioritize the students with the most attempts
@@ -213,4 +225,26 @@ def scheduleResponses(slots, responses_df, attendance_df):
                 #print(f"SIZE ISSUE {slot_name}: N,MAX {[ncurrslot, maxsize]}")
                 break  # Exit early if slot is full
 
-    return slots, all_students # by now, all_students is just students left
+
+    # now we update the attendance; updated_tracker is a list of all students to be logged into the updated tracker
+    updated_tracker = []
+    
+    
+    for s in complete_students:
+        d = dict()
+        d['email'] = s.email
+        if s in all_students: # remember, all_students are just studnets left out
+            d['attendance'] = s.count
+            d['signups'] = s.attempts + 1
+        elif s in prev_students:
+            #print("not in response but in attendance history",s.email)
+            d['attendance'] = s.count 
+            d['signups'] = s.attempts
+        else: # selected studnet!
+            d['attendance'] = s.count + 1
+            d['signups'] = s.attempts + 1
+        updated_tracker.append(d)
+    
+    
+
+    return slots, all_students, pd.DataFrame(updated_tracker) # by now, all_students is just students left
