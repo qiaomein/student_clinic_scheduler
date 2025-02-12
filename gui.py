@@ -43,7 +43,7 @@ def main():
         if "@" in str(attendance_df.columns[0]) or len(attendance_df.columns) != 3:
             st.error("[ERROR] Make sure uploaded attendance file has headers in order of [email, attendance, signups].")
             raise ValueError
-        if list(responses_df.columns) != ['Timestamp', 'Full Name? (First and Last)', 'UTRGV Email', 'Preferred Time Slot (can choose multiple)', 'What year are you in?', 'Do you speak Spanish?']:
+        if len(list(responses_df.columns)) != 7:
             st.error("[ERROR] Make sure the responses are directly exported from Google Forms with the headers ['Timestamp', 'Name', 'UTRGV Email', 'Time Slot(s)', 'Year', 'Spanish?']")
             raise ValueError
     except AttributeError:
@@ -108,7 +108,7 @@ def main():
     
         
         st.download_button(
-            label="Download Updated Attendance CSV",
+            label="Download Updated Attendance CSV!",
             data=updated_tracker.to_csv(index = False),
             file_name="tracker.csv",
             mime="text/csv"
