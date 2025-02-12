@@ -43,7 +43,7 @@ def main():
         if "@" in str(attendance_df.columns[0]) or len(attendance_df.columns) != 3:
             st.error("[ERROR] Make sure uploaded attendance file has headers in order of [email, attendance, signups].")
             raise ValueError
-        if len(list(responses_df.columns)) != 7:
+        if len(list(responses_df.columns)) != 6:
             st.error("[ERROR] Make sure the responses are directly exported from Google Forms with the headers ['Timestamp', 'Name', 'UTRGV Email', 'Time Slot(s)', 'Year', 'Spanish?']")
             raise ValueError
     except AttributeError:
