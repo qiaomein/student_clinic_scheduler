@@ -61,6 +61,9 @@ class Student(object): # pass in a line (l) from the csv file as a list
     def __repr__(self):
         return f"{self.email}"
 
+    def __lt__(self,other):
+        return self.email < other.email
+
 class Slots: # indices correspond to slot names
     def __init__(self):
         self.n = 10
@@ -118,62 +121,46 @@ def isEligible(student, slots, i): # true if student can be slotted into slots.a
     spanish = "[S]" in slot_name
     if str(student.year) in year and (time_slot in student.time_slot.split('/')) and not (not student.spanish and spanish):
         
-        #print(f"CHECK ELIGIBILITY: {student}, FOR {slot_name}")
         return True
     else:
         #print(f"VERIFY INELIGIBILITY: {student}, FOR {slot_name}")
         return False
             
 
-def check_all(out, slots, all_students, students_left): # checks that output satisfies all constraints
-    # out is final scheduling of students such that out[i] is the students in the ith time slot
-    # slots is the final Slots object 
-    # students_left is a list of all students not selected
-    # all_students is a list of all students
+def check_all(slots, leftovers, all_students, prevstudents, updatedtracker): # checks that output satisfies all constraints
+    # slots is slotsobject so that slots.curr_slots is the schedule
+    # leftovers is a list of unselected students
+    # all_students is a list of ALL students (from attendance sheet and responses)
+    # updated tracker: list of dictionaries of 'email':value, 'attendance':value, 'signups':value
     
-    N = len(set(all_students)) 
+    def ensureNoDupes(selected_students):
+        return (sorted(list(set(selected_students))) == sorted(selected_students))
     
+    # check that all_students = leftovers + slots.curr_slots
     selected_students = []
-    for s in out:
-        selected_students.extend(s)
+    for l in slots.curr_slots:
+        selected_students.extend(l)
     
-    all_slots = slots.all_slots
+    assert len(set(selected_students + leftovers + prevstudents)) == len(set(all_students)) # we know that all students been ac
     
+    # no need to check if everyone is eligible for the slot they're in
     
-    # assert that students_left is subset of all_students
-    assert set(students_left).issubset(set(all_students))
+    # check no  list has duplicates
+    assert ensureNoDupes(selected_students)
+    assert ensureNoDupes(leftovers)
+    assert ensureNoDupes(prevstudents)
+    assert ensureNoDupes(all_students)
     
+    # now check updated tracker: list of dicts
+    ut_emails = [list(s.values())[0] for s in updatedtracker]
+    ut_vals = [list(s.values())[1:] for s in updatedtracker]
+    for s in all_students:
+        if s.email in ut_emails:
+            ut_emails.remove(s.email)
     
+    assert ut_emails == [] # everyone accounted for in the updated tracker
     
-    # assert no duplicates in students left nor in all_students
-    assert len(set(students_left)) == len(students_left) and N == len(all_students)
-    
-    # assert that none of the students_left are in the final output
-    assert (set(students_left) & set(selected_students)) == set()
-    
-    # assert that no one is filled in different slots at same time
-    assert len(selected_students) == len(set(selected_students))
-    print("[LOG]: No conflicting.")
-    
-    # assert that none of the students left can be slotted in
-    for s in students_left:
-        for i in range(slots.n):
-            slot = all_slots[i]
-            if len(slot) < slots.slot_max[i]: # if the slot isn't full, check if student left can be fit in
-                assert not isEligible(s, slots, i)
-                
-    # assert that every student is in correct time slot
-    for i in range(slots.n): # checking morning slots
-        for student in out[i]:
-            if i < 5:
-                assert student.time_slot in ['m','b']
-            else:
-                assert student.time_slot in ['a','b']
         
-        
-        
-                
-            
     
     print("[LOG]: TESTS ALL PASSED.")
 
@@ -192,13 +179,12 @@ def scheduleResponses(slots, responses_df, attendance_df):
         # take all rows with the @ symbol in the first column;
         filtereddf = attendance_df[attendance_df.iloc[:, 0].str.contains("@", na=False)]
         student_dict = filtereddf.set_index(filtereddf.columns[0]).apply(tuple, axis=1).to_dict()
-        print('here',student_dict) # never using pandas again lmfao
+        # print('here',student_dict) # never using pandas again lmfao
         for email,d in student_dict.items(): # storing the data from attendance form
             if email not in all_emails:
                 s = Student(None)
                 s.email = email
                 s.count, s.attempts = [int(q) for q in d]
-                #print('her#####################e2', s.count, s.attempts)
                 prev_students.append(s)
         
         for s in all_students: # update the previous attendance of the responding students
@@ -219,7 +205,6 @@ def scheduleResponses(slots, responses_df, attendance_df):
     
     for i in range(slots.n-1,-1,-1): # loop through each time slot
         slot_name = slots.slot_names[i]
-        #print("SLOT NAME: ",slot_name,len(slots.curr_slots[i]), slots.curr_slots)
         for s in all_students[:]:  # Iterate over a copy to avoid modifying while looping
             eligibility = isEligible(s, slots, i)
             ncurrslot = len(slots.curr_slots[i])
@@ -230,12 +215,11 @@ def scheduleResponses(slots, responses_df, attendance_df):
                     slots.curr_slots[i].append(s)
                     all_students = removeStudent(s, all_students)  # Safe to remove since iterating over a copy
             else:
-                #print(f"SIZE ISSUE {slot_name}: N,MAX {[ncurrslot, maxsize]}")
                 break  # Exit early if slot is full
 
 
     # now we update the attendance; updated_tracker is a list of all students to be logged into the updated tracker
-    updated_tracker = []
+    updated_tracker = [] 
     
     
     for s in complete_students:
@@ -245,7 +229,6 @@ def scheduleResponses(slots, responses_df, attendance_df):
             d['attendance'] = s.count
             d['signups'] = s.attempts + 1
         elif s in prev_students:
-            #print("not in response but in attendance history",s.email)
             d['attendance'] = s.count 
             d['signups'] = s.attempts
         else: # selected studnet!
@@ -253,6 +236,7 @@ def scheduleResponses(slots, responses_df, attendance_df):
             d['signups'] = s.attempts + 1
         updated_tracker.append(d)
     
+    check_all(slots,all_students,complete_students,prev_students, updated_tracker) 
     
 
     return slots, all_students, pd.DataFrame(updated_tracker) # by now, all_students is just students left
