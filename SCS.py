@@ -18,8 +18,13 @@ class Student(object): # pass in a line (l) from the csv file as a list
         if l is None: # nameless student
             return
         
+    
         self.slot = None # should start with no slot; this is index corresponding to order listed in Slots class
-        self.time, self.name, self.email, self.raw_time_slot, self.year, self.spanish = l
+        try:
+            self.time, self.name, self.email, self.raw_time_slot, self.year, self.spanish = l
+        except:
+            raise IndexError
+        
         self.year = int(self.year[-1])
         self.count = count
         self.attempts = attempts
@@ -27,9 +32,13 @@ class Student(object): # pass in a line (l) from the csv file as a list
         if len(self.time_slot) == 2:
             self.time_slot = "m/a"
         else:
-            if self.time_slot[0][0] == '9':
+            rawstring = self.time_slot[0]
+            rawstring = re.findall(r'\d{1,2}:\d{2}', rawstring)
+            assert len(rawstring) == 2
+            
+            if int(rawstring[0].split(':')[0]) < int(rawstring[1].split(':')[0]):
                 self.time_slot = 'm'
-            elif self.time_slot[0][0] == '1':
+            else:
                 self.time_slot = 'a'
                 
         if self.spanish == "Yes":
@@ -44,7 +53,7 @@ class Student(object): # pass in a line (l) from the csv file as a list
         sptext = "E"
         if self.spanish:
             sptext = "E/S"
-        return f"- {self.name} [{self.count}/{self.attempts}] (MS{self.year}, {sptext}) for time slots [{self.time_slot}]."
+        return f"- {self.name} [{self.count}/{self.attempts}] (MS{self.year}, {sptext}) for time slots {self.raw_time_slot} [{self.time_slot}]."
 
     def __hash__(self):
         return hash(self.email)
@@ -183,29 +192,28 @@ def scheduleResponses(slots, responses_df, attendance_df):
         # take all rows with the @ symbol in the first column;
         filtereddf = attendance_df[attendance_df.iloc[:, 0].str.contains("@", na=False)]
         student_dict = filtereddf.set_index(filtereddf.columns[0]).apply(tuple, axis=1).to_dict()
-        # print('here',student_dict) # never using pandas again lmfao
-        for email,d in student_dict.items():
+        print('here',student_dict) # never using pandas again lmfao
+        for email,d in student_dict.items(): # storing the data from attendance form
             if email not in all_emails:
                 s = Student(None)
                 s.email = email
-                s.count, s.attempts = d
+                s.count, s.attempts = [int(q) for q in d]
+                #print('her#####################e2', s.count, s.attempts)
                 prev_students.append(s)
         
         for s in all_students: # update the previous attendance of the responding students
             if s.email in student_dict.keys():
                 d = student_dict[s.email]
-                s.count = d[0]
-                s.attempts = d[1]
+                s.count = int(d[0])
+                s.attempts = int(d[1])
+                
             else: # new email in the responses!
                 pass
         
         
-                
-        
     complete_students = all_students + prev_students
     
     random.shuffle(all_students) # randomize 
-    # want to prioritize the students with the most attempts
     all_students.sort(key = lambda x: x.count) # sort by attendance; orignal random order is preserved (stable sorting)
     ## now we just loop through each time slot, and go down the all_students list and pop it if eligible
     

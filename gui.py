@@ -6,9 +6,9 @@ from SCS import Student, Slots, logout, scheduleResponses
 
 
 
-def load_csv(uploaded_file):
+def load_csv(uploaded_file, haha = 'infer'):
     if uploaded_file is not None:
-        return pd.read_csv(uploaded_file)
+        return pd.read_csv(uploaded_file, header=haha)
     return None
 
 
@@ -18,8 +18,9 @@ def main():
 
     st.title("Student Clinic Scheduler")
     st.text("Ronald Shaju, Volunteer Coordinator 2024-2025")
-    st.text("Contact info: Ronald.shaju01@utrgv.edu, ronaldshaju@gmail.com, (956) 605-4202")
-
+    st.markdown("""
+    **Email:** [ronald.shaju01@utrgv.edu](mailto:ronald.shaju01@utrgv.edu), [ronaldshaju@gmail.com](mailto:ronaldshaju@gmail.com), (956) 605-4202
+    """)
     
     slots = Slots()
     slots.display_slots()
@@ -27,15 +28,17 @@ def main():
     col1,col2 = st.columns(2)
     
     with col1:
+        url = "https://forms.gle/UAvQuLgE1Gz5NL7b7"
         st.header("Upload Responses File")
-        responses_file = st.file_uploader("Upload responses.csv", type=["csv"], key="responses")
+
+        responses_file = st.file_uploader("You must upload your responses file exported as a .csv file here.",type=["csv"], key="responses")
     
     with col2:
         st.header("Upload Attendance File")
         attendance_file = st.file_uploader("Upload attendance tracker file. If not, an empty attendance file, tracker.csv, will be generated for you.", type=["csv"], key="attendance")
     
     responses_df = load_csv(responses_file)
-    attendance_df = load_csv(attendance_file)
+    attendance_df = load_csv(attendance_file,None)
     
     if responses_df is not None:
         with col1:
@@ -57,13 +60,7 @@ def main():
     
     
     if responses_df is not None: # only show the buttons if responses are uploaded
-        # m = st.markdown("""
-        #     <style>
-        #     div.stButton > button:first-child {
-        #         background-color: rgb(66,224,245);
-        #     }
-        #     </style>""", unsafe_allow_html=True)
-
+        
         goButton = st.button("Process Attendance")
         #reshuffleButton = st.button("Reshuffle!")
         
