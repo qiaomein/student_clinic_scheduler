@@ -6,7 +6,7 @@ Created on Tue Jan 23 16:44:25 2024
 @author: qiaomein
 """
 
-import csv, random, os, re
+import random, re
 import streamlit as st
 import pandas as pd
 
@@ -14,7 +14,7 @@ def logout(*s): print(f"[LOG]: {s}")
 
 class Student(object): # pass in a line (l) from the csv file as a list
     def __init__(self, l, count = 0, attempts = 0):
-        # TODO: handle if l goes wrong
+        
         if l is None: # nameless student
             return
         
@@ -23,11 +23,13 @@ class Student(object): # pass in a line (l) from the csv file as a list
         try:
             self.time, self.name, self.email, self.raw_time_slot, self.year, self.spanish = l
         except:
-            raise IndexError
+            logout("[WARNING] Nameless student created due to improper construction.")
         
         self.year = int(self.year[-1])
         self.count = count
         self.attempts = attempts
+        
+        # time_slot should be from set ['m','a','m/a']
         self.time_slot = re.split(";|,", self.raw_time_slot)
         if len(self.time_slot) == 2:
             self.time_slot = "m/a"
@@ -41,7 +43,7 @@ class Student(object): # pass in a line (l) from the csv file as a list
             else:
                 self.time_slot = 'a'
                 
-        if self.spanish == "Yes":
+        if self.spanish.lower() == "yes":
             self.spanish = True
         else:
             self.spanish = False
@@ -103,10 +105,7 @@ class Slots: # indices correspond to slot names
             s += "\n##################################################################\n"
         
         return s
-            
-            
-
-            
+                 
 def removeStudent(student, student_set): # simply removes student from a student_set
     for s in student_set:
         if student.email == s.email:
@@ -116,16 +115,19 @@ def removeStudent(student, student_set): # simply removes student from a student
           
 def isEligible(student, slots, i): # true if student can be slotted into slots.all_slots[i]
     slot_name = slots.slot_names[i]
-    year = slot_name.split("MS")[-1].split('/')
-    time_slot = slot_name[0].lower()
-    spanish = "[S]" in slot_name
-    if str(student.year) in year and (time_slot in student.time_slot.split('/')) and not (not student.spanish and spanish):
-        
+    slot_year = slot_name.split("MS")[-1].split('/')
+    slot_time_slot = slot_name[0].lower()
+    slot_spanish = "[S]" in slot_name
+    
+    eligible_year = str(student.year) in slot_year
+    eligible_timeslot = slot_time_slot in student.time_slot.split('/')
+    eligible_spanish = not (not student.spanish and slot_spanish)
+    
+    if eligible_year and eligible_timeslot and eligible_spanish:
         return True
     else:
         #print(f"VERIFY INELIGIBILITY: {student}, FOR {slot_name}")
-        return False
-            
+        return False          
 
 def check_all(slots, leftovers, all_students, prevstudents, updatedtracker): # checks that output satisfies all constraints
     # slots is slotsobject so that slots.curr_slots is the schedule
@@ -141,7 +143,7 @@ def check_all(slots, leftovers, all_students, prevstudents, updatedtracker): # c
     for l in slots.curr_slots:
         selected_students.extend(l)
     
-    assert len(set(selected_students + leftovers + prevstudents)) == len(set(all_students)) # we know that all students been ac
+    assert sorted((selected_students + leftovers + prevstudents)) == sorted(all_students) # we know that all students been ac
     
     # no need to check if everyone is eligible for the slot they're in
     
@@ -153,15 +155,14 @@ def check_all(slots, leftovers, all_students, prevstudents, updatedtracker): # c
     
     # now check updated tracker: list of dicts
     ut_emails = [list(s.values())[0] for s in updatedtracker]
-    ut_vals = [list(s.values())[1:] for s in updatedtracker]
+    # ut_vals = [list(s.values())[1:] for s in updatedtracker]
     for s in all_students:
         if s.email in ut_emails:
             ut_emails.remove(s.email)
     
     assert ut_emails == [] # everyone accounted for in the updated tracker
     
-        
-    
+
     print("[LOG]: TESTS ALL PASSED.")
 
 def scheduleResponses(slots, responses_df, attendance_df):
@@ -170,11 +171,11 @@ def scheduleResponses(slots, responses_df, attendance_df):
     # outputs a Slots.curr_slots populated with students and another list of students left out
     
     # first construct a pool of students from responses_df
-    all_students = [Student(row) for row in responses_df.itertuples(index = False)] # this only includes responders
+    all_responders = [Student(row) for row in responses_df.itertuples(index = False)] # this only includes responders
     prev_students = [] # keep track of previous students (from attendance file)
     ## load in data from attendance_df
     if attendance_df is not None: 
-        all_emails = [s.email for s in all_students] # emails of all requesting students
+        all_emails = [s.email for s in all_responders] # emails of all requesting students
         # email, attendance, attempts
         # take all rows with the @ symbol in the first column;
         filtereddf = attendance_df[attendance_df.iloc[:, 0].str.contains("@", na=False)]
@@ -187,7 +188,7 @@ def scheduleResponses(slots, responses_df, attendance_df):
                 s.count, s.attempts = [int(q) for q in d]
                 prev_students.append(s)
         
-        for s in all_students: # update the previous attendance of the responding students
+        for s in all_responders: # update the previous attendance of the responding students
             if s.email in student_dict.keys():
                 d = student_dict[s.email]
                 s.count = int(d[0])
@@ -197,15 +198,15 @@ def scheduleResponses(slots, responses_df, attendance_df):
                 pass
         
         
-    complete_students = all_students + prev_students
+    complete_students = all_responders + prev_students
     
-    random.shuffle(all_students) # randomize 
-    all_students.sort(key = lambda x: x.count) # sort by attendance; orignal random order is preserved (stable sorting)
-    ## now we just loop through each time slot, and go down the all_students list and pop it if eligible
-    
+    random.shuffle(all_responders) # randomize 
+    #all_responders.sort(key = lambda x: -x.attempts/(x.count+1)) # sort by attendance; orignal random order is preserved (stable sorting)
+    all_responders.sort(key = lambda x: x.count) 
+    ## now we just loop through each time slot, and go down the all_responders list and pop it if eligible
     for i in range(slots.n-1,-1,-1): # loop through each time slot
         slot_name = slots.slot_names[i]
-        for s in all_students[:]:  # Iterate over a copy to avoid modifying while looping
+        for s in all_responders[:]:  # Iterate over a copy to avoid modifying while looping
             eligibility = isEligible(s, slots, i)
             ncurrslot = len(slots.curr_slots[i])
             maxsize = slots.slot_max[i]
@@ -213,19 +214,17 @@ def scheduleResponses(slots, responses_df, attendance_df):
             if ncurrslot < maxsize:
                 if eligibility:
                     slots.curr_slots[i].append(s)
-                    all_students = removeStudent(s, all_students)  # Safe to remove since iterating over a copy
+                    all_responders = removeStudent(s, all_responders)  # Safe to remove since iterating over a copy
             else:
                 break  # Exit early if slot is full
-
+    students_left = all_responders
 
     # now we update the attendance; updated_tracker is a list of all students to be logged into the updated tracker
     updated_tracker = [] 
-    
-    
     for s in complete_students:
         d = dict()
         d['email'] = s.email
-        if s in all_students: # remember, all_students are just studnets left out
+        if s in students_left: # remember, all_students are just studnets left out
             d['attendance'] = s.count
             d['signups'] = s.attempts + 1
         elif s in prev_students:
@@ -236,7 +235,7 @@ def scheduleResponses(slots, responses_df, attendance_df):
             d['signups'] = s.attempts + 1
         updated_tracker.append(d)
     
-    check_all(slots,all_students,complete_students,prev_students, updated_tracker) 
+    check_all(slots,students_left,complete_students,prev_students, updated_tracker) 
     
 
-    return slots, all_students, pd.DataFrame(updated_tracker) # by now, all_students is just students left
+    return slots, students_left, pd.DataFrame(updated_tracker) # by now, all_students is just students left
