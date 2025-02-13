@@ -205,11 +205,7 @@ def scheduleResponses(slots, responses_df, attendance_df):
     #all_responders.sort(key = lambda x: -x.attempts/(x.count+1)) # sort by attendance; orignal random order is preserved (stable sorting)
     all_responders.sort(key = lambda x: x.count) 
     ## now we just loop through each time slot, and go down the all_responders list and pop it if eligible
-    
-    # greedy algo but loop through time slots by priority: spanish, morning, afternoons
-    index_orders = [3,4,9,8,0,1,2,5,6,7]
-    assert len(set(index_orders)) == slots.n
-    for i in index_orders: # loop through each time slot
+    for i in range(slots.n-1,-1,-1): # loop through each time slot
         slot_name = slots.slot_names[i]
         for s in all_responders[:]:  # Iterate over a copy to avoid modifying while looping
             eligibility = isEligible(s, slots, i)
