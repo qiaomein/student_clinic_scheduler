@@ -1,7 +1,0 @@
-/Users/qiaomein/student_clinic_scheduler/build/CMakeFiles/SCS.dir
-/Users/qiaomein/student_clinic_scheduler/build/CMakeFiles/edit_cache.dir
-/Users/qiaomein/student_clinic_scheduler/build/CMakeFiles/rebuild_cache.dir
-/Users/qiaomein/student_clinic_scheduler/build/CMakeFiles/list_install_components.dir
-/Users/qiaomein/student_clinic_scheduler/build/CMakeFiles/install.dir
-/Users/qiaomein/student_clinic_scheduler/build/CMakeFiles/install/local.dir
-/Users/qiaomein/student_clinic_scheduler/build/CMakeFiles/install/strip.dir
