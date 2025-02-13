@@ -73,7 +73,8 @@ class Slots: # indices correspond to slot names
             "Morning MS1", "Morning MS2", "Morning MS3/4", "Morning [S] MS1/2", "Morning [S] MS3/4",
             "Afternoon MS1", "Afternoon MS2", "Afternoon MS3/4", "Afternoon [S] MS1/2", "Afternoon [S] MS3/4"
         ]
-        self.slot_max = [3, 3, 3, 2, 2, 3, 3, 4, 2, 2]
+        #self.slot_max = [3, 3, 3, 2, 2, 3, 3, 4, 2, 2]
+        self.slot_max = [3, 3, 0, 0, 0, 3, 3, 0, 0, 0]
         self.curr_slots = [[] for _ in range(self.n)] #stores list of list of students; curr_slots[i] returns all students slotted in the ith time slot
     
     def display_slots(self): # this is for gui streamlit display; updates the max cap of a slot

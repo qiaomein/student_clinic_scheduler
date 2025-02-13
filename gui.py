@@ -12,7 +12,7 @@ def load_csv(uploaded_file, headerOptions = 'infer'):
 
 def main():
     st.set_page_config(layout="wide")
-    st.title("Student Clinic Scheduler")
+    st.title("Student Run Clinic Scheduler")
     st.text("Ronald Shaju, Volunteer Coordinator 2024-2025")
     st.markdown("""
     **Email:** [ronald.shaju01@utrgv.edu](mailto:ronald.shaju01@utrgv.edu), [ronaldshaju@gmail.com](mailto:ronaldshaju@gmail.com), (956) 605-4202
